@@ -21,7 +21,7 @@ The Backbone of JNTUHRESULTS-WEB where all the semester results of a student and
 
 To get started, just clone the repository and run `pip install and python manage.py runserver`:
 
-    git clone https://github.com/ThilakReddyy/JNTUHRESULTS-SERVICE.git
+    git clone https://github.com/khaja-moiz/jntuhresults-api.git
     cd JNTUHRESULTS-SERVICE
     pip install -r requirements.txt
     python manage.py runserver
@@ -30,9 +30,9 @@ Open [http://localhost:8000](http://localhost:8000) with your browser to see the
 
 ## Questions? Need Help? Found a bug?
 
-If you've got questions about setup, deploying, special feature implementation, or just want to chat with the developer, please feel free to contact me on <a href="mailto:thilakreddypothuganti@gmail.com">mail</a>
+If you've got questions about setup, deploying, special feature implementation, or just want to chat with the developer, please feel free to contact me on <a href="mailto:khwaja.moizuddin786@gmail.com">mail</a>
 
-Found a bug ? Go ahead and [submit an issue](https://github.com/ThilakReddyy/JNTUHRESULTS-SERVICE/issues). And, of course, feel free to submit pull requests with bug fixes or changes to the `dev` branch.
+Found a bug ? Go ahead and [submit an issue](https://github.com/khaja-moiz/jntuhresults-api/issues). And, of course, feel free to submit pull requests with bug fixes or changes to the `dev` branch.
 
 Also feel free to message me if you have any ideas for small website tools that you can't yet find online. Thanks!
 
