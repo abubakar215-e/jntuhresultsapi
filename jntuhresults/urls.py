@@ -1,7 +1,8 @@
 from django.urls import path
-from .views import multi,allResults
+from .views import multi,allResults,result
 
 urlpatterns = [
     path('api/multi',multi.as_view()),
     path('api/single',allResults.as_view()),
+    path('api/result',result.as_view()),
 ]

@@ -12,7 +12,7 @@ listi=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2']
 JNTUH_Results={}
 #Page Not Found Redirect
 def page_not_found_view(request, exception):
-    return redirect('/api/single?htno=18E51A0479')
+    return redirect('/api/single?htno=19361A0555')
     
 def cors(request):
     return HttpResponse("hello")
@@ -117,6 +117,46 @@ class allResults(View):
             Results['Results']['Total']="{0:.2f}".format(round(total/credits,2))
         stopping=time.time()
         print(stopping-starting)
-        JNTUH_Results[htno]=Results
+        # JNTUH_Results[htno]=Results
         return JsonResponse(Results,safe=False)
 #------------------------------------------------------------------------------------------------------------------
+
+#---------------------results of each sem---------------------------------------
+
+class result(View):
+    async def gettingurl(self, htno, code):
+        tasksi=[]
+        Result=Search_by_Roll_number.Results()
+        tasksi.append(asyncio.create_task(Result.getting_faster_Grades(htno,code)))
+        responses = asyncio.gather(*tasksi)
+        return await responses
+
+    def get(self,request):
+        global listi
+        try:
+            htno=request.GET.get('htno').upper()
+            if not htno:
+                raise ValueError("HTNO parameter is missing or empty.")
+            code=request.GET.get('code').upper()
+            if not code:
+                raise ValueError("Code parameter is missing or empty.")
+        except ValueError as ve:
+            return HttpResponse(f"Error: {ve}")
+        
+        if(code not in listi):
+            return HttpResponse("Please put down the correct code")
+        if(len(htno)!=10):
+            return HttpResponse("Please enter a valid htno")
+        
+        try:
+            res=asyncio.run(self.gettingurl(htno, code))
+        except Exception as e:
+            return HttpResponse(f"Error: {e}")
+        
+        response=list()
+        for i in res:
+            if(len(i['Results'][code])==0):
+                del i   
+            else:
+                response.append(i)
+        return JsonResponse(response,safe=False)
