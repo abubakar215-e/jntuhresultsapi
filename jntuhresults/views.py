@@ -3,10 +3,13 @@ from django.http import HttpResponse,JsonResponse
 from asgiref.sync import sync_to_async
 from jntuhresults.Executables import Search_by_Roll_number
 from jntuhresults.Executables.constants import a_dic,Index_Keys
+from jntuhresults.Executables.examcodes import get_exam_codes
 import json
 import asyncio
 import time
 from django.views.generic import View
+from django.http import JsonResponse
+
 
 listi=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2']
 JNTUH_Results={}
@@ -72,6 +75,7 @@ class allResults(View):
 
     #API for getting all Results
     def get(self,request):
+        print(request.META.get("HTTP_USER_AGENT"))
         starting =time.time()
         try:
             htno=request.GET.get('htno').upper()
@@ -160,3 +164,114 @@ class result(View):
             else:
                 response.append(i)
         return JsonResponse(response,safe=False)
+
+
+
+
+        # -------------------------------------------------------------
+
+
+
+class cMode(View):
+    async def allResults_extend(self, htno):
+        global listi
+        listE = listi
+        if (htno[4] == '5'):
+            listE = listi[2:]
+        tasksi = []
+        for i in listE:
+            Result = Search_by_Roll_number.Results()
+            tasksi.append(asyncio.create_task(Result.getting_faster_Grades(htno, i)))
+        responses = asyncio.gather(*tasksi)
+        return await responses
+
+    # API for getting all Results
+    def get(self, request):
+        starting = time.time()
+        try:
+            htno1 = request.GET.get('htno1').upper()
+            htno2 = request.GET.get('htno2').upper()
+            print(htno1)
+            print(htno2)
+        except:
+            return HttpResponse('Enter hallticket number correctly')
+        try:
+            Result1 = JNTUH_Results[htno1]
+            Result2 = JNTUH_Results[htno2]
+            stopping = time.time()
+            print(stopping - starting)
+            print("Loaded from cache")
+            return JsonResponse({'Result1': Result1, 'Result2': Result2}, safe=False)
+        except:
+            print("Not loaded from cache")
+        try:
+            json_object1 = asyncio.run(self.allResults_extend(htno1))
+            json_object2 = asyncio.run(self.allResults_extend(htno2))
+        except:
+            print("Failed")
+            return HttpResponse("Not working correctly", status=400)
+        Results1 = {}
+        Results1['Details'] = {}
+        Results1['Results'] = {}
+        total1 = 0
+        credits1 = 0
+        all_pass1 = True
+        for i in json_object1:   
+            try:
+                for ind in i['Results']:
+                    Results1['Results'][ind] = i['Results'][ind]
+                    Results1['Details'] = i['DETAILS']
+                    try:
+                        total1 = total1 + i['Results'][ind]['total']
+                        credits1 = credits1 + i['Results'][ind]['credits']
+                    except:
+                        all_pass1 = False
+            except:
+                del Results1['Results'][ind]
+        try:
+            print(Results1['Details']['NAME'])
+        except:
+            pass
+        if (all_pass1):
+            Results1['Results']['Total'] = "{0:.2f}".format(round(total1 / credits1, 2))
+        Results2 = {}
+        Results2['Details'] = {}
+        Results2['Results'] = {}
+        total2 = 0
+        credits2 = 0
+        all_pass2 = True
+        for i in json_object2:   
+            try:
+                for ind in i['Results']:
+                    Results2['Results'][ind] = i['Results'][ind]
+                    Results2['Details'] = i['DETAILS']
+                    try:
+                        total2 = total2 + i['Results'][ind]['total']
+                        credits2 = credits2 + i['Results'][ind]['credits']
+                    except:
+                        all_pass2 = False
+            except:
+                del Results2['Results'][ind]
+        try:
+            print(Results2['Details']['NAME'])
+        except:
+            pass
+        if (all_pass2):
+            Results2['Results']['Total'] = "{0:.2f}".format(round(total2 / credits2, 2))
+        stopping = time.time()
+        print(stopping - starting)
+        # JNTUH_Results[htno] = Results
+        return JsonResponse({'Result1': Results1, 'Result2': Results2}, safe=False)
+
+
+# ----------------------------------------------------------------- 
+
+
+
+
+#examcode---------------------------------------
+def exam_codes_api(request):
+    exam_codes = get_exam_codes()
+    return JsonResponse(exam_codes)
+
+#------------------------------------------testing area danger-------
