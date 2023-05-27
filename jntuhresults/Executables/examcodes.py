@@ -51,7 +51,7 @@ def get_exam_codes():
         result_text = result.get_text()
 
         # or "R22" in result_text
-        if "R18" in result_text:
+        if "R18" in result_text or "R22" in result_text :
             exam_code = extract_exam_code(result_link)
             category = categorize_exam_code(result_text, exam_code)
 
