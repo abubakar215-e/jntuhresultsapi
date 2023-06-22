@@ -4,12 +4,14 @@ from asgiref.sync import sync_to_async
 from jntuhresults.Executables import Search_by_Roll_number
 from jntuhresults.Executables.constants import a_dic,Index_Keys
 from jntuhresults.Executables.examcodes import get_exam_codes
+from jntuhresults.Executables.notificationscraper import get_notifications
 import json
 import asyncio
 import time
 from django.views.generic import View
 from django.http import JsonResponse
 
+from jntuhresults.Executables.jntuhresultscraper import ResultScraper
 
 listi=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2']
 JNTUH_Results={}
@@ -19,158 +21,40 @@ def page_not_found_view(request, exception):
     
 def cors(request):
     return HttpResponse("hello")
-#Multi-----------------------------------------------------------------------------------------------------
-class multi(View):
-    async def gettingurl(self,htno,fro,to,code):
-        tasksi=[]
-        First_Index,Last_Index=Index_Keys.index(fro),Index_Keys.index(to)
-        Index_List=Index_Keys[First_Index:Last_Index+1]
-        for i in Index_List:
-            Result=Search_by_Roll_number.Results()
-            tasksi.append(asyncio.create_task(Result.getting_faster_Grades(htno+i,code)))
-        responses = asyncio.gather(*tasksi)
-        return await responses
 
-    def get(self,request):
-        global listi
-        try:
-            htno1=request.GET.get('from').upper()
-            htno2=request.GET.get('to').upper()
-            code=request.GET.get('code').upper()
-        except:
-            return HttpResponse("Pass from and to roll number as query")
-        if(code not in listi):
-            return HttpResponse("Please put down the correct code")
-        if(htno1[:8]!=htno2[:8]):
-            return HttpResponse("Please Maintain from roll number first and last numbers as same")
-        elif(htno1[8:]>htno2[8:]):
-            return HttpResponse("First Hall ticket should be greater")
-        elif(len(htno1)!=10 or len(htno2)!=10):
-            return HttpResponse("Please Enter the Roll Numbers correctly")
-        res=asyncio.run(self.gettingurl(htno1[:8],htno1[8:],htno2[8:],code))
-        response=list()
-        for i in res:
-            if(len(i['Results'][code])==0):
-                del i   
-            else:
-                response.append(i)
-        return JsonResponse(response,safe=False)
-#----------------------------------------------------------------------------------------------------------------
+# --------------------Semester Results ---------------------
+class semresult(View):
+    async def scrape_results_async(self, htno, code):
+        # Create an instance of ResultScraper
+        jntuhresult = ResultScraper(htno.upper())
 
+        # Scrape the result asynchronously
+        result = await jntuhresult.scrape_all_results(code)
 
+        return result
 
-#single------------------------------------------------------------------------------------------------------------
-class allResults(View):
-    async def allResults_extend(self,htno):
-            global listi
-            listE=listi
-            if(htno[4]=='5'):
-                listE=listi[2:]
-            tasksi=[]
-            for i in listE:
-                Result=Search_by_Roll_number.Results()
-                tasksi.append(asyncio.create_task(Result.getting_faster_Grades(htno,i)))
-            responses = asyncio.gather(*tasksi)
-            return await responses
+    async def get(self, request):
+        # Retrieve htno and semester from the GET parameters
+        htno = request.GET.get('htno')
+        code = request.GET.get('code')
 
-    #API for getting all Results
-    def get(self,request):
-        print(request.META.get("HTTP_USER_AGENT"))
-        starting =time.time()
-        try:
-            htno=request.GET.get('htno').upper()
-            print(htno)
-        except:
-            return HttpResponse('Enter hallticket number correctly')
-        try:
-            Result=JNTUH_Results[htno]
-            stopping=time.time()
-            print(stopping-starting)
-            print("Loaded from cache")
-            return JsonResponse(Result,safe=False)
-        except:
-            print("Not loaded from cache")
-        try:
-            json_object = asyncio.run(self.allResults_extend(htno))
-        except:
-            print("Failed")
-            return HttpResponse("Not working correctly",status=400)
-        Results={}
-        Results['Details']={}
-        Results['Results']={}
-        total=0
-        credits=0
-        all_pass=True
-        for i in json_object:   
-            try:
-                for ind in i['Results']:
-                    Results['Results'][ind]=i['Results'][ind]
-                    Results['Details']=i['DETAILS']
-                    try:
-                        total=total+i['Results'][ind]['total']
-                        credits=credits+i['Results'][ind]['credits']
-                    except:
-                        all_pass=False
-            except:
-                del Results['Results'][ind]
-        try:
-            print(Results['Details']['NAME'])
-        except:
-            pass
-        if(all_pass):
-            Results['Results']['Total']="{0:.2f}".format(round(total/credits,2))
-        stopping=time.time()
-        print(stopping-starting)
-        # JNTUH_Results[htno]=Results
-        return JsonResponse(Results,safe=False)
-#------------------------------------------------------------------------------------------------------------------
+        # Print htno for debugging
+        print(htno)
 
-#---------------------results of each sem---------------------------------------
+        # Scrape the result asynchronously
+        result = await self.scrape_results_async(htno, code)
 
-class result(View):
-    async def gettingurl(self, htno, code):
-        tasksi=[]
-        Result=Search_by_Roll_number.Results()
-        tasksi.append(asyncio.create_task(Result.getting_faster_Grades(htno,code)))
-        responses = asyncio.gather(*tasksi)
-        return await responses
+        # Check if the result is empty
+        if not result["Details"]:
+            return JsonResponse({}, safe=False)
 
-    def get(self,request):
-        global listi
-        try:
-            htno=request.GET.get('htno').upper()
-            if not htno:
-                raise ValueError("HTNO parameter is missing or empty.")
-            code=request.GET.get('code').upper()
-            if not code:
-                raise ValueError("Code parameter is missing or empty.")
-        except ValueError as ve:
-            return HttpResponse(f"Error: {ve}")
-        
-        if(code not in listi):
-            return HttpResponse("Please put down the correct code")
-        if(len(htno)!=10):
-            return HttpResponse("Please enter a valid htno")
-        
-        try:
-            res=asyncio.run(self.gettingurl(htno, code))
-        except Exception as e:
-            return HttpResponse(f"Error: {e}")
-        
-        response=list()
-        for i in res:
-            if(len(i['Results'][code])==0):
-                del i   
-            else:
-                response.append(i)
-        return JsonResponse(response,safe=False)
+        # Return the result as a JSON response
+        return JsonResponse(result, safe=False)
 
 
 
 
-        # -------------------------------------------------------------
-
-
+# ----------------------------------------------------------------
 
 class cMode(View):
     async def allResults_extend(self, htno):
@@ -273,5 +157,162 @@ class cMode(View):
 def exam_codes_api(request):
     exam_codes = get_exam_codes()
     return JsonResponse(exam_codes)
+# ---------------------------------------------------
+
+
+# ------------------Notifications-------------------
+def notify(request):
+    notifications = get_notifications()
+    return JsonResponse(notifications, safe=False)
+
 
 #------------------------------------------testing area danger-------
+def homepage(request):
+    return render(request,'index.html')
+
+# ----------------------------------------------------
+#academicresult------------------------------------------------------------------------------------------------------------
+
+class AcademicResult(View):
+    def get(self,request):
+        print(request.META.get("HTTP_USER_AGENT"))
+        starting =time.time()    
+
+        htno=request.GET.get('htno').upper()
+        # Check if the hall ticket number is valid
+        if len(htno) != 10:
+            return HttpResponse(htno+" Invalid hall ticket number")
+        try:
+                # Create an instance of ResultScraper
+                jntuhresult = ResultScraper(htno.upper())
+
+                # Run the scraper and return the result
+                result = jntuhresult.run()
+                
+                # Calculate the total marks and credits
+                total_credits = 0  # Variable to store the total credits
+                total = 0  # Variable to store the total marks
+                failed = False  # Flag to indicate if any value is missing 'total' key
+
+                # Iterate over the values in result["Results"] dictionary
+                for value in result["Results"].values():
+                    if 'total' in value.keys():  # Check if the current value has 'total' key
+                        total += value['total']  # Add the 'total' value to the total marks
+                        total_credits += value['credits']  # Add the 'credits' value to the total credits
+                    else:
+                        failed = True  # Set the flag to indicate missing 'total' key
+
+                # Calculate the CGPA if there are non-zero credits
+                if not failed:
+                    result["Results"]["Total"] = "{0:.2f}".format(round(total/total_credits,2))
+
+                stopping=time.time()
+                print(htno,result['Details']['NAME'],stopping-starting)
+
+                del jntuhresult
+                # Return the result
+                return JsonResponse(result,safe=False)
+        
+        except Exception as e:
+            print(htno,e)
+            del jntuhresult
+            # Catch any exceptions raised during scraping
+            return HttpResponse(htno+" - 500 Internal Server Error")
+           
+#------------------------------------------------------------------------------------------------------------------
+
+
+# Class Result ----------------------------------------------------------------------
+class ClassResult(View):
+    async def scrape_results_async(self, htno, semester):
+        # Create an instance of ResultScraper
+        jntuhresult = ResultScraper(htno.upper())
+
+        # Scrape all the results asynchronously
+        result = await jntuhresult.scrape_all_results(semester)
+
+        return result
+
+    async def get(self, request):
+        # Retrieve htnos and semester from the GET parameters
+        htnos = request.GET.get('htnos').split(",")
+        semester = request.GET.get('semester')
+
+        # Print htnos for debugging
+        print(htnos)
+
+        # Create a list to hold the tasks
+        tasks = []
+
+        # Add the tasks to the list
+        for htno in htnos:
+            # Create a task for scraping results asynchronously for each htno
+            task = asyncio.create_task(self.scrape_results_async(htno, semester))
+            tasks.append(task)
+
+        # Await all the tasks to complete
+        gathered_results = await asyncio.gather(*tasks)
+
+        # Filter out the empty results
+        filtered_results = [result for result in gathered_results if result["Details"]]
+
+        # Return the results as a JSON response
+        return JsonResponse(filtered_results, safe=False)
+
+
+# ------------------------------------------------------------------------------
+# -----------------overallresults-------
+class ClassResults(View):
+    async def scrape_results_async(self, htno):
+        # Create an instance of ResultScraper
+        jntuhresult = ResultScraper(htno.upper())
+
+        # Scrape all the results
+        result = jntuhresult.run()
+
+        # Calculate the total marks and credits
+        total_credits = 0  # Variable to store the total credits
+        total = 0  # Variable to store the total marks
+        failed = False  # Flag to indicate if any value is missing 'total' key
+
+        # Iterate over the values in result["Results"] dictionary
+        for value in result["Results"].values():
+            if 'total' in value.keys():  # Check if the current value has 'total' key
+                total += value['total']  # Add the 'total' value to the total marks
+                total_credits += value['credits']  # Add the 'credits' value to the total credits
+            else:
+                failed = True  # Set the flag to indicate missing 'total' key
+
+        # Calculate the CGPA if there are non-zero credits
+        if not failed:
+            result["Results"]["Total"] = "{0:.2f}".format(round(total / total_credits, 2))
+
+        stopping = time.time()
+        print(htno, result['Details']['NAME'])
+
+        return result
+
+    async def get(self, request):
+        # Retrieve htnos from the GET parameters
+        htnos = request.GET.get('htnos').split(",")
+
+        # Print htnos for debugging
+        print(htnos)
+
+        # Create a list to hold the tasks
+        tasks = []
+
+        # Add the tasks to the list
+        for htno in htnos:
+            # Create a task for scraping results asynchronously for each htno
+            task = asyncio.create_task(self.scrape_results_async(htno))
+            tasks.append(task)
+
+        # Await all the tasks to complete
+        gathered_results = await asyncio.gather(*tasks)
+
+        # Filter out the empty results
+        filtered_results = [result for result in gathered_results if result["Details"]]
+
+        # Return the results as a JSON response
+        return JsonResponse(filtered_results, safe=False)
