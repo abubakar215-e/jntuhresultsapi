@@ -46,7 +46,7 @@ class semresult(View):
 
         # Check if the result is empty
         if not result["Details"]:
-            return JsonResponse({}, safe=False)
+           return HttpResponse("Internal Server Error ", status=500)
 
         # Return the result as a JSON response
         return JsonResponse(result, safe=False)
@@ -270,6 +270,11 @@ class ClassResults(View):
         # Scrape all the results
         result = jntuhresult.run()
 
+        # Check if the result has valid data
+        if "Details" not in result or not result["Details"]:
+            # Return None if the result is empty or does not have "Details"
+            return None
+
         # Calculate the total marks and credits
         total_credits = 0  # Variable to store the total credits
         total = 0  # Variable to store the total marks
@@ -312,7 +317,7 @@ class ClassResults(View):
         gathered_results = await asyncio.gather(*tasks)
 
         # Filter out the empty results
-        filtered_results = [result for result in gathered_results if result["Details"]]
+        filtered_results = [result for result in gathered_results if result is not None]
 
         # Return the results as a JSON response
         return JsonResponse(filtered_results, safe=False)

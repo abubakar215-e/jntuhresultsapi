@@ -195,9 +195,7 @@ class ResultScraper:
 
             #important formulae
             total += int(self.grades_to_gpa[value[data]['subject_grade']]) * float(value[data]['subject_credits'])
-            print(total)
             credits += float(value[data]['subject_credits'])
-            print(credits)
             orgGrades.append(value[data]['subject_grade'])
             
             
