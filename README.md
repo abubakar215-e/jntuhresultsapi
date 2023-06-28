@@ -1,8 +1,8 @@
 # [RESULTS JNTUH](http://resultsjntuh.vercel.app/) - SERVICE </h1>
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/29064b56066d4799b6167567f710bb8b)](https://app.codacy.com/gh/khaja-moiz/jnuthresults-api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![Website](https://img.shields.io/badge/Website-Jntuh%20Results-blue?style=flat&logo=world&logoColor=white)](https://resultsjntuh.up.railway.app/)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/khaja-moiz/jntuhresults-api)
-![LICENSE](https://img.shields.io/github/license/khaja-moiz/jntuhresults-api)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/khaja-moiz/jnuthresults-api)
+![LICENSE](https://img.shields.io/github/license/khaja-moiz/jnuthresults-api)
 
 <p align="center">
   <br>
