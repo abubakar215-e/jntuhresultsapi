@@ -1,6 +1,10 @@
+# [RESULTS JNTUH](http://resultsjntuh.vercel.app/) - SERVICE </h1>
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/29064b56066d4799b6167567f710bb8b)](https://app.codacy.com/gh/khaja-moiz/jnuthresults-api/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Website](https://img.shields.io/badge/Website-Jntuh%20Results-blue?style=flat&logo=world&logoColor=white)](https://resultsjntuh.up.railway.app/)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/khaja-moiz/jntuhresults-api)
+![LICENSE](https://img.shields.io/github/license/khaja-moiz/jntuhresults-api)
+
 <p align="center">
-  <img src="" alt="JNTUH B.TECH RESULTS" width="100">
-  <img src="https://raw.githubusercontent.com/ThilakReddyy/JNTUHRESULTS-WEB/main/public/favicon-light.png#gh-light-mode-only" alt="JNTUH B.TECH RESULTS" width="100">
   <br>
   django | python | BeautifulSoup 
 </p>
