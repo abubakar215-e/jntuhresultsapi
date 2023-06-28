@@ -61,7 +61,8 @@ def get_exam_codes():
             "R22": {}
         },
         "bpharmacy": {
-            "R17": {}
+            "R17": {},
+            "R22": {}
         },
         "mtech":{
             "R19":{},
@@ -108,7 +109,7 @@ def get_exam_codes():
     return exam_codes
 
 exam_codes=get_exam_codes()
-# print(exam_codes)
+print(exam_codes)
 
 
 
