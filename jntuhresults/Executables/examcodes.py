@@ -9,7 +9,8 @@ def extract_exam_code(result_link):
     try:
         if(exam_code[3]=='&'):
             return exam_code[:3]
-    except:
+    except Exception as e:
+        print(e)
         return exam_code
     return exam_code
 
@@ -65,16 +66,16 @@ def get_exam_codes():
             "R22": {}
         },
         "mtech":{
-            "R19":{},
-            "R22":{}
+            "R19": {},
+            "R22": {}
         },
         "mpharmacy":{
-                "R19":{},
-                "R22":{}
+            "R19": {},
+            "R22": {}
         },
         "mba":{
-            "R19":{},
-            "R22":{}
+            "R19": {},
+            "R22": {}
         }
     }
     degree=list(exam_codes.keys())

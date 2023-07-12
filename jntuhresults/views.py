@@ -34,12 +34,13 @@ class semresult(View):
         return result
 
     async def get(self, request):
+        print(request.META.get("HTTP_USER_AGENT"))
         # Retrieve htno and semester from the GET parameters
         htno = request.GET.get('htno')
         code = request.GET.get('code')
 
         # Print htno for debugging
-        print(htno)
+        # print(htno)
 
         # Scrape the result asynchronously
         result = await self.scrape_results_async(htno, code)
@@ -47,6 +48,7 @@ class semresult(View):
         # Check if the result is empty
         if not result["Details"]:
            return HttpResponse("Internal Server Error ", status=500)
+        print(htno,result['Details']['NAME'])
 
         # Return the result as a JSON response
         return JsonResponse(result, safe=False)
