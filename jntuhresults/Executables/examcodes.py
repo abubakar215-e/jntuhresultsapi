@@ -54,7 +54,7 @@ def get_exam_codes():
     url = "http://results.jntuh.ac.in/jsp/home.jsp"
     response = requests.get(url)
     soup = BeautifulSoup(response.content, "html.parser")
-    btech_results = soup.find_all("table")[0].find_all("tr")
+    # btech_results = soup.find_all("table")[0].find_all("tr")
 
     exam_codes = {
         "btech": {
