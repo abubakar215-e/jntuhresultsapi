@@ -10,8 +10,17 @@ import asyncio
 import time
 from django.views.generic import View
 from django.http import JsonResponse
-
 from jntuhresults.Executables.jntuhresultscraper import ResultScraper
+import redis
+import json
+from datetime import timedelta
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
+redis_url=os.environ.get("REDIS_URL")
+redis_client = redis.from_url(redis_url)
 
 listi=['1-1','1-2','2-1','2-2','3-1','3-2','4-1','4-2']
 JNTUH_Results={}
@@ -178,46 +187,81 @@ def homepage(request):
 class AcademicResult(View):
     def get(self,request):
         print(request.META.get("HTTP_USER_AGENT"))
-        starting =time.time()    
+        # Record the current time as the starting time
+        starting =time.time()
 
+        # Get the 'htno' parameter from the request and convert it to uppercase
         htno=request.GET.get('htno').upper()
+
+        # Retrieve data from Redis cache using the 'htno' as the key
+        redis_response = redis_client.get(htno)
+        
+        # Check if data exists in the Redis cache
+        if redis_response is not None:
+            # If data exists, parse the JSON response
+            data = json.loads(redis_response)
+
+            # Record the current time as the stopping time
+            stopping=time.time()
+
+            # Print relevant details (e.g., 'htno', student name, and execution time)
+            print(htno,data["data"]['Details']['NAME'],stopping-starting)
+
+            # Return the data as a JSON response to the client
+            return JsonResponse(data["data"],safe=False)
+        
         # Check if the hall ticket number is valid
         if len(htno) != 10:
             return HttpResponse(htno+" Invalid hall ticket number")
         try:
-                # Create an instance of ResultScraper
-                jntuhresult = ResultScraper(htno.upper())
+            # Create an instance of ResultScraper
+            jntuhresult = ResultScraper(htno.upper())
 
-                # Run the scraper and return the result
-                result = jntuhresult.run()
+            # Run the scraper and return the result
+            result = jntuhresult.run()
                 
-                # Calculate the total marks and credits
-                total_credits = 0  # Variable to store the total credits
-                total = 0  # Variable to store the total marks
-                failed = False  # Flag to indicate if any value is missing 'total' key
+            # Calculate the total marks and credits
+            total_credits = 0  # Variable to store the total credits
+            total = 0  # Variable to store the total marks
+            failed = False  # Flag to indicate if any value is missing 'total' key
 
-                # Iterate over the values in result["Results"] dictionary
-                for value in result["Results"].values():
-                    if 'total' in value.keys():  # Check if the current value has 'total' key
-                        total += value['total']  # Add the 'total' value to the total marks
-                        total_credits += value['credits']  # Add the 'credits' value to the total credits
-                    else:
-                        failed = True  # Set the flag to indicate missing 'total' key
+            # Iterate over the values in result["Results"] dictionary
+            for value in result["Results"].values():
+                if 'total' in value.keys():  # Check if the current value has 'total' key
+                    total += value['total']  # Add the 'total' value to the total marks
+                    total_credits += value['credits']  # Add the 'credits' value to the total credits
+                else:
+                    failed = True  # Set the flag to indicate missing 'total' key
 
-                # Calculate the CGPA if there are non-zero credits
-                if not failed:
-                    result["Results"]["Total"] = "{0:.2f}".format(round(total/total_credits,2))
+            # Calculate the CGPA if there are non-zero credits
+            if not failed:
+                result["Results"]["Total"] = "{0:.2f}".format(round(total/total_credits,2))
+            
+            # Record the current time as the stopping time
+            stopping=time.time()
 
-                stopping=time.time()
-                print(htno,result['Details']['NAME'],stopping-starting)
+            # Print relevant details (e.g., 'htno', student name, and execution time)
+            print(htno,result['Details']['NAME'],stopping-starting)
 
-                del jntuhresult
-                # Return the result
-                return JsonResponse(result,safe=False)
+            # Delete the variable 'jntuhresult' from memory
+            del jntuhresult
+
+          # Store the 'result' data in the Redis cache with the 'htno' as the key.
+            try:
+                redis_client.set(htno, json.dumps({"data": result}))
+                
+                # Set an expiration time of 6 hours for the cached data associated with 'htno'.
+                redis_client.expire(htno, timedelta(hours=6))
+                
+                print("Data has been set in the Redis cache.")
+            except Exception as e:
+                print("Error setting data in the Redis cache:", e)
+
+            # Return the result
+            return JsonResponse(result,safe=False)
         
         except Exception as e:
             print(htno,e)
-            del jntuhresult
             # Catch any exceptions raised during scraping
             return HttpResponse(htno+" - 500 Internal Server Error")
            
