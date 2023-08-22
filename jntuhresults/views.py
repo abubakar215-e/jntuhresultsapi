@@ -248,7 +248,7 @@ class AcademicResult(View):
 
           # Store the 'result' data in the Redis cache with the 'htno' as the key.
             try:
-                redis_client.set(htno, json.dumps({"data": result}))
+                redis_client.set(htno, json.dumps(result))
                 
                 # Set an expiration time of 6 hours for the cached data associated with 'htno'.
                 redis_client.expire(htno, timedelta(hours=6))
