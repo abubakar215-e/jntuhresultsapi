@@ -26,8 +26,8 @@ class ResultScraper:
                     '1-2': ['1356', '1363', '1381', '1435', '1448', '1481', '1503', '1570', '1620', '1622', '1656'],
                     '2-1': ['1391', '1425', '1449', '1496', '1560', '1610', '1628', '1667', '1671'],
                     '2-2': ['1437', '1447', '1476', '1501', '1565', '1605', '1627', '1663'],
-                    '3-1': ['1454', '1491', '1550', '1590', '1626', '1639', '1645', '1655', '1686'],
-                    '3-2': ['1502', '1555', '1595', '1625', '1638', '1649', '1654', '1682', '1690'],
+                    '3-1': ['1454', '1491', '1550', '1590', '1626', '1639', '1645', '1655', '1686', '1690'],
+                    '3-2': ['1502', '1555', '1595', '1625', '1638', '1649', '1654', '1682'],
                     '4-1': ['1545', '1585', '1624', '1640', '1644', '1653', '1678'],
                     '4-2': ['1580', '1600', '1623', '1672', '1673', '1677']
                     },
@@ -116,7 +116,7 @@ class ResultScraper:
         async with session.get(self.url+payloaddata) as response:
             return await response.text()
 
-    def scrape_results(self, semester_code, response):
+    def scrape_results(self, semester_code, session_name, response):
         
         # Parse the response HTML using BeautifulSoup
         soup = BeautifulSoup(response, "lxml")
@@ -126,6 +126,9 @@ class ResultScraper:
 
         # print(session_name)
         # Get student details
+        
+        self.results["Results"][semester_code][session_name] = {}  # Add this line
+
         Details = soup.find_all("table")[0].find_all("tr")
         Htno = Details[0].find_all("td")[1].get_text()
         Name = Details[0].find_all("td")[3].get_text()
@@ -171,15 +174,14 @@ class ResultScraper:
                 continue
            
             # Store Subject details in results dictionary
-            self.results["Results"][semester_code][subject_code] = {}
-            self.results["Results"][semester_code][subject_code]["subject_code"] = subject_code
-            self.results["Results"][semester_code][subject_code]["subject_name"] = subject_name
-            self.results["Results"][semester_code][subject_code]["subject_internal"] = subject_internal
-            self.results["Results"][semester_code][subject_code]["subject_external"] = subject_external
-            self.results["Results"][semester_code][subject_code]["subject_total"] = subject_total
-            self.results["Results"][semester_code][subject_code]["subject_grade"] = subject_grade
-            self.results["Results"][semester_code][subject_code]["subject_credits"] = subject_credits
-        
+            self.results["Results"][semester_code][session_name][subject_code] = {}
+            self.results["Results"][semester_code][session_name][subject_code]["subject_code"] = subject_code
+            self.results["Results"][semester_code][session_name][subject_code]["subject_name"] = subject_name
+            self.results["Results"][semester_code][session_name][subject_code]["subject_internal"] = subject_internal
+            self.results["Results"][semester_code][session_name][subject_code]["subject_external"] = subject_external
+            self.results["Results"][semester_code][session_name][subject_code]["subject_total"] = subject_total
+            self.results["Results"][semester_code][session_name][subject_code]["subject_grade"] = subject_grade
+            self.results["Results"][semester_code][session_name][subject_code]["subject_credits"] = subject_credits
     # # Store the exam code in the results dictionary
     #     self.results["Results"][semester_code]["exam_code"] = exam_code
     
@@ -277,19 +279,26 @@ class ResultScraper:
                             print(self.roll_number,e)
 
             # Wait for all the tasks to complete
+
+
+            # Later in your async loop where you're scraping results:
             for exam_code, exam_tasks in tasks.items():
                 self.results["Results"][exam_code] = {}
                 try:
                     for result in await asyncio.gather(*exam_tasks):
                         if "Enter HallTicket Number" not in result:
-                            self.scrape_results(exam_code, result)
+                            # Extract the session name from the response HTML
+                            soup = BeautifulSoup(result, "lxml")
+                            session_name = soup.find("h6").get_text()
 
-                    if bool(self.results["Results"][exam_code]):
-                        self.total_grade_calculator(exam_code, self.results["Results"][exam_code])
-                    else:
+                            # Call the scrape_results method with the session name parameter
+                            self.scrape_results(exam_code, session_name, result)
+
+                    if not self.results["Results"][exam_code]:
                         del self.results["Results"][exam_code]
                 except Exception as e:
-                    print(self.roll_number,e)
+                    print(self.roll_number, e)
+
         return self.results
 
 
