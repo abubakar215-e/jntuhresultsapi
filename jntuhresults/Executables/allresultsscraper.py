@@ -166,13 +166,12 @@ class ResultScraper:
             subject_total = result_subject.find_all("td")[subject_total_index].get_text()            
 
             # Skip subjects with lower grades if already stored
-            if(subject_code in self.results["Results"][semester_code] and 
-                    self.results["Results"][semester_code][subject_code]["subject_grade"]!='F' and
-                    self.results["Results"][semester_code][subject_code]["subject_grade"]!='Ab' and
-                    self.results["Results"][semester_code][subject_code]["subject_grade"]!='-' and
-                    self.grades_to_gpa[self.results["Results"][semester_code][subject_code]["subject_grade"]]>self.grades_to_gpa[subject_grade]):
+            if(subject_code in self.results["Results"][semester_code][session_name] and 
+                    self.results["Results"][semester_code][session_name][subject_code]["subject_grade"]!='F' and
+                    self.results["Results"][semester_code][session_name][subject_code]["subject_grade"]!='Ab' and
+                    self.results["Results"][semester_code][session_name][subject_code]["subject_grade"]!='-' and
+                    self.grades_to_gpa[self.results["Results"][semester_code][session_name][subject_code]["subject_grade"]]>self.grades_to_gpa[subject_grade]):
                 continue
-           
             # Store Subject details in results dictionary
             self.results["Results"][semester_code][session_name][subject_code] = {}
             self.results["Results"][semester_code][session_name][subject_code]["subject_code"] = subject_code
@@ -182,39 +181,6 @@ class ResultScraper:
             self.results["Results"][semester_code][session_name][subject_code]["subject_total"] = subject_total
             self.results["Results"][semester_code][session_name][subject_code]["subject_grade"] = subject_grade
             self.results["Results"][semester_code][session_name][subject_code]["subject_credits"] = subject_credits
-    # # Store the exam code in the results dictionary
-    #     self.results["Results"][semester_code]["exam_code"] = exam_code
-    
-    # Calculate the total cgpa of each semester
-    def total_grade_calculator(self, code, value):
-
-        orgGrades =[]
-        total = 0   
-        credits = 0
-
-        for data in value:
-            if 'DETAILS' in data:
-                continue
-
-            # if value[data]['subject_grade'] in ('F', 'Ab','-'):
-            #     return ""
-
-            #important formulae
-            total += int(self.grades_to_gpa[value[data]['subject_grade']]) * float(value[data]['subject_credits'])
-            credits += float(value[data]['subject_credits'])
-            orgGrades.append(value[data]['subject_grade'])
-            
-            
-        if "F" in orgGrades or "Ab" in orgGrades or "-" in orgGrades or credits == 0:
-            self.results["Results"][code]["status"] = "FAILED"
-        else:
-            self.results["Results"][code]["status"] = "PASSED"
-        self.results["Results"][code]["total"] = total
-        self.results["Results"][code]["credits"] = credits
-        self.results["Results"][code]["SGPA"] = "{0:.2f}".format(round(total / credits, 2))
-       
-
-
 
     async def scrape_all_results(self, exam_code="all"):
         async with aiohttp.ClientSession() as session:
@@ -289,7 +255,7 @@ class ResultScraper:
                         if "Enter HallTicket Number" not in result:
                             # Extract the session name from the response HTML
                             soup = BeautifulSoup(result, "lxml")
-                            session_name = soup.find("h6").get_text()
+                            session_name = soup.find("h6").get_text() + '_' + str(time.time())
 
                             # Call the scrape_results method with the session name parameter
                             self.scrape_results(exam_code, session_name, result)
